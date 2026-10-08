@@ -119,7 +119,7 @@ miliastra_health {op:"sha", all:true, mirror:"<工作区镜像目录>"}
 > 直接喂构建脚本即可。**别用 `output:"lua"` 再正则解析自己的产物**（产物格式一变就静默错位）。
 > ⚠️ **图元层**（`shapeKind:"sprite"`）**打破**"控件数 = 层数 × 每层池"的旧口径：
 > **一个形状 = 1 个控件**（+ `trailCount` 个残影）⇒ 比用粒子拼便宜一个数量级 ✓
-> 详见技能 `miliastra-code` 的 `references/case-extreme-particles.md` §4。
+> 详见技能 `miliastra-code` 里的极端粒子案例（`case-extreme-particles.md`）§4。
 
 > ⚠️ **两个硬规则**（生成前校验，不过就报错）：结构体 ID 必须 **10 位数字**、单条文本 **≤500 字符**。
 > ⚠️ **未验证项恒带 `unverified[]`**：`<size=N>`、4bit、图元层的真机渲染（旋转正负号 / 拉伸采样）——
