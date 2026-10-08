@@ -50,4 +50,8 @@ references/plugin-toolbox.md   ← 工具详解：每个 op 的回执看什么�
 
 ## License
 
-[GPL-3.0-only](LICENSE)（与 `dsh-miliastra` 插件一致）。
+[MIT](LICENSE) © 2026 Lin。
+
+> 本技能是**原创文档**（不含插件源码）⇒ MIT；
+> 插件本体 [`dsh-miliastra`](https://github.com/LoktLin/dsh-miliastra) 是 **GPL-3.0-only**（它吸收了 GPL 引擎代码）——
+> 两者的许可是**各自独立**的，引用本技能的内容时按 MIT 即可。
