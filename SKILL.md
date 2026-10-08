@@ -9,6 +9,8 @@ degradation: 工具不可用时退回工作区手工命令（docs/工作区常�
 > 这份技能回答一个问题：**「我现在该调哪个工具、怎么调、调完怎么确认」** + **「这个坑我踩过没有」**。
 > 不讲玩法怎么写（那是 `miliastra-code`）、不讲界面怎么好看（那是 `miliastra-ui`）。
 > 定位：**工具链实操手册** + **踩过的坑全集** + **判据口径**。
+>
+> 本手册对应 **dsh-miliastra 0.7.2**（Host 改动必须重启 `dsh web`；`miliastra_echo` 回的 `version` = **运行中 Host** 的版本）。
 
 ## 0. 一句话心智模型
 
@@ -49,6 +51,14 @@ miliastra_map {op:"script"}       ← 挂载名 + embedded vs live（match 才�
 | **游戏外先跑一遍** | `miliastra_sim {op:"bind"/"verify"/"frames"/"cases"}` | deploy 前的预测试；**不等于真机通过**（官方素材/联机不覆盖） |
 | **节点图为什么不动** | `miliastra_kb {op:"qa" / "node"}` | 离线蒸馏 QA + 558 节点词典；`op=list/doc/search` 是在线第三方（会发 query） |
 | **查 UI 契约** | `miliastra_code {op:"lint-ui"}` / `node tools/check-ui-contract.mjs` | 字号档位 / `h ≥ 字号×1.4` / 8 的倍数 / 画哪=点哪 |
+| **一次到位部署** | `miliastra_code {op:"deploy", level, file, source, gates:true, sync:["<镜像绝对路径>"]}` | `gates` = **工作区那两道门**（没过**不写盘**；找不到工具就报 `GATES_NO_TOOLS`）；`sync` = 二进制同步镜像 + SHA 复验；回执 `shas` = **四方对照**（源码/活文件/镜像[]/地图里嵌的）；`checklist[]` = 存盘→重开一局→看 `match:true`（**引用，别复述**） |
+| **生成物落盘（不进上下文）** | `miliastra_gen {op:"vfx-lua", …, saveTo:"<绝对路径>"}` | 给了 `saveTo` ⇒ 只回摘要（实测 `vfx-lua` **64 314 B → 4 351 B**）；**不给时行为一字节不变** |
+| **回执要精简骨架** | `… {receipt:"min"}`（`code` / `sim` / `log`） | `summaryOnly` = 去体积、留字段；`receipt:"min"` = **换骨架、留结论**（实测 `log errors` 2151 → 768 B）；非名单 op 原样返回 |
+| **探针改写（不动真源）** | `miliastra_sim {op:"bind", source, boot:{cur:3, mode:"build"}}` | 改的是**内存副本**（真源一个字节不动）；`probe.patched` 逐条列改了什么。⚠️ `complete:true` 会**如实回 unsupported**（不猜玩法数据） |
+| **量一张图的配色** | `miliastra_asset {op:"measure", source:"<图片绝对路径>", cols:64}` | 主色**众数** + 连通块（灰/饱和）；**坐标单位是采样格**，不是原图像素 |
+| **错误形态解释** | `miliastra_log {op:"errors", explain:true}` | 默认**不带**那 8 条固定解释（只给 `formsCount`）⇒ 要才传 |
+| **判据出处** | `miliastra_health {brief:true}` | `memoryDoc` 指向 `案子/<地图>/AGENTS.md` 的「记忆」段（**引用，别复述**） |
+| **点名一棵控件子树** | `miliastra_map {op:"clientui", root:<控件id>, summaryOnly:true}` | **配 `summaryOnly` 一起用**：slim **4 215 B** vs 全量 **195 777 B**（差 46 倍） |
 
 ## 3. 部署与备份安全（这条最容易误解，务必读）
 
@@ -113,6 +123,11 @@ miliastra_map {op:"script"}       ← 挂载名 + embedded vs live（match 才�
 | **试玩探针用完必须还原** | 临时覆盖活文件 | `miliastra_probe` 后务必 `miliastra_code {op:"restore"}` | 工具纪律 |
 | **构建产物不许直接改** | 改了会被 build 覆盖 | 判据：存在 `tools/build-*.mjs` + 片段目录 ⇒ 你手上是产物；改片段后重建 | `R9` |
 | **PowerShell `Set-Content` 写 .lua/.md** | 加 BOM + 管道压行 ⇒ Lua `--` 吞掉后面一切 | 一律用 `edit`/`write`/node `fs` | 工作区实测两次 |
+| **`errors` 两档结论相反**（已修） | 全量说"这份日志没意义"、瘦身却给 48 条带行号的报错 ⇒ **去追不属于本局的旧行号** | `errorsMeaningless:true` ⇒ `errors` 为 `null` 是**设计**：**既别当"零报错"、也别当"没跑"**；结论看 `count` / `kindCounts` | 本轮实测（作者拍板 A） |
+| **拿两次"最新日志"做比较** | 换局 / 试玩后两次调用各自解析到**不同的 `.gia`** ⇒ 对比结论无效 | **先 `op=sessions` 发现、再显式钉 `file`**（回归/对比一律这么做） | 本轮实测 |
+| **把 `measure` 的坐标当原图像素** | 块的位置/大小对不上原图 | 坐标单位是**采样格**（`cols`×`rows`）；要像素精度就调大 `cols`（≤512） | 本轮实测 |
+| **自己复述"存盘→试玩→对账"** | 每轮手写一遍（实测 ~60 次） | 直接**引用** `deploy` 回执的 `checklist[]` | 本轮实测 |
+| **部署四连手搓** | 门禁 → 部署 → 镜像同步 → 比 SHA 跑四次 | 一次 `deploy {gates:true, sync:[…]}` 拿回 `shas` 四方对照 | 本轮实测 |
 
 ### 5.5 外部库/框架（不要搬）
 
@@ -126,7 +141,10 @@ miliastra_map {op:"script"}       ← 挂载名 + embedded vs live（match 才�
 - **发现问题先问人**（一次一件事 + 证据 + 判断 + 2~3 选项 + 代价）；工程/技术（部署/重构/跑门禁）**直接做**，玩法本体（规则/数值/文案）**先问**。
 - **门禁是证据不是否决权**：红了 ⇒ 修到过 / 如实标 `pending` 交付；**不许回退、删功能、拿空壳顶**。
 - **发版四步同一提交**：版本号四处一起改 → `gen-readme-tools --write` → `build-sim-play --check` + `npm test` 全绿 → 提交/tag/`main` 快进/`npm publish`（GitHub Release 页人工建）。
-- **schema 体积 34 KB 棘轮**：加参数前估体积；超了把长 description 下沉到 skill/文档。
+- **schema 体积：软线 40 KB / 硬线 50 KB**（2026-10-07 作者拍板；先例链 26.3 → 32 → 34 → 50 KB）。过软线只警告，过硬线才红。
+  ★ **纪律：能力（op / 参数）一律进 schema；只有解释性长文才下沉到 skill / 文档。**
+  不写进 schema 的参数 = AI **看不到 = 等于没有** —— 真实案例：`clientui` 的 `root`（点名任意控件回子树）**实现早就写好了**，
+  却因为当年顶穿 34 KB 只能留在代码里 ⇒ **AI 整整一个版本调不出来**（0.7.2 才补回 schema）。
 
 ## 7. 环境降级
 
